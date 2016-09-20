@@ -11,6 +11,9 @@ string_stamp = "%i_%i_%i_%ih%i" % (timestamp.tm_year, timestamp.tm_mon,
 
 path_measures_instron = '/home/francois/Essais/2016-09-20_Victor/'
 
+mi_cycle = False
+cycle_count = 0
+
 
 class EvalStress(crappy2.links.MetaCondition):
     """
@@ -19,16 +22,30 @@ class EvalStress(crappy2.links.MetaCondition):
 
     def __init__(self):
         self.section = np.pi * 5 ** 2  # Specimen section in mm^2 (in order to have MPa below)
+        self.amplitude = 20  # amplitude de detection (N)
 
     def evaluate(self, value):
+        global cycle_count, mi_cycle
         value['tau(MPa)'] = value['Force(N)'] / self.section
+        if value['Force(N)'] > self.amplitude and not mi_cycle:
+            mi_cycle = True
+            value['Cycle'] = cycle_count
+        elif value['Force(N)'] < -self.amplitude and mi_cycle:
+            value['Cycle'] = cycle_count + 1
+            mi_cycle = False
+        else:
+            value['Cycle'] = cycle_count
         return value
+
 
 class EvalCycles(crappy2.links.MetaCondition):
     def __init__(self):
-        self.amplitude = 10  # Amplitude de detection
+        self.amplitude = 10  # Amplitude de detection (en N)
+
+    def evaluate(self, value):
 
 
+        return value
 
 def eval_offset(device, duration):
     timeout = time.time() + duration  # duration secs from now
